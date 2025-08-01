@@ -1,39 +1,29 @@
 pipeline {
     agent any
 
-    parameters {
-        string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'fizza424/docker-working', description: 'Docker image name')
-        string(name: 'CONTAINER_PORT', defaultValue: '5000', description: 'Port for the container')
-    }
-
     environment {
-        DOCKER_TAG = 'latest'
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds') // This must match your Jenkins credentials ID
+        IMAGE_NAME = 'yourdockerhubusername/docker-working'
     }
 
     stages {
         stage('Build Docker Image') {
             steps {
-                sh """
-                docker build -t ${params.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG} .
-                """
+                bat 'docker build -t %IMAGE_NAME% .'
             }
         }
 
         stage('Run Container') {
             steps {
-                sh """
-                docker run -d -p ${params.CONTAINER_PORT}:${params.CONTAINER_PORT} ${params.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}
-                """
+                bat 'docker run -d -p 8080:8080 --name myapp %IMAGE_NAME%'
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                sh """
-                echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
-                docker push ${params.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}
-                """
+                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
+                    bat 'docker push %IMAGE_NAME%'
+                }
             }
         }
     }
@@ -47,5 +37,6 @@ pipeline {
         }
     }
 }
+
 
 
