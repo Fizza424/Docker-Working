@@ -2,61 +2,55 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'docker-working'
-        DOCKERHUB_USER = 'fizza424' // 🔁 Replace with your DockerHub username
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        IMAGE_NAME = 'fizza424/docker-working'
     }
 
     stages {
         stage('Clone') {
-    steps {
-        git url: 'https://github.com/Fizza424/Docker-Working.git', branch: 'main'
-    }
-}
+            steps {
+                git 'https://github.com/Fizza424/Docker-Working.git'
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker Image...'
-                sh 'docker build -t $IMAGE_NAME .'
+                bat 'docker build -t %IMAGE_NAME% .'
             }
         }
 
         stage('Run Container for Test') {
             steps {
-                echo 'Running container for testing...'
-                sh 'docker run -d -p 5000:5000 --name test_container $IMAGE_NAME'
-                sh 'sleep 5'
-                sh 'curl http://localhost:5000 || echo "App not responding"'
-                sh 'docker stop test_container'
-                sh 'docker rm test_container'
+                echo 'Running Container for Testing...'
+                bat 'docker run -d --name test-container -p 80:80 %IMAGE_NAME%'
+                bat 'timeout /t 10'
+                bat 'docker stop test-container'
+                bat 'docker rm test-container'
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
-                    sh 'docker tag $IMAGE_NAME $DOCKERHUB_USER/$IMAGE_NAME:latest'
-                    sh 'docker push $DOCKERHUB_USER/$IMAGE_NAME:latest'
-                }
+                echo 'Pushing Image to DockerHub...'
+                bat 'docker login -u %DOCKERHUB_CREDENTIALS_USR% -p %DOCKERHUB_CREDENTIALS_PSW%'
+                bat 'docker push %IMAGE_NAME%'
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deploying container...'
-                sh 'docker stop $IMAGE_NAME || true'
-                sh 'docker rm $IMAGE_NAME || true'
-                sh 'docker run -d -p 5000:5000 --name $IMAGE_NAME $DOCKERHUB_USER/$IMAGE_NAME:latest'
+                echo 'Deployment step (customize this as needed)...'
             }
         }
     }
 
     post {
-        success {
-            echo '✅ CI/CD Completed Successfully!'
-        }
         failure {
             echo '❌ Pipeline failed!'
+        }
+        success {
+            echo '✅ Pipeline succeeded!'
         }
     }
 }
