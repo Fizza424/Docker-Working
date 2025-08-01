@@ -1,53 +1,49 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'fizza424/docker-working', description: 'Docker image name')
+        string(name: 'CONTAINER_PORT', defaultValue: '5000', description: 'Port for the container')
+    }
+
     environment {
-        IMAGE_NAME = 'docker-working'
-        TAG = 'latest'
+        DOCKER_TAG = 'latest'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds') // This must match your Jenkins credentials ID
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/Fizza424/Docker-Working.git'
-            }
-        }
-
-        stage('List Files') {
-            steps {
-                dir("${env.WORKSPACE}") {
-                    bat 'dir'
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
-                dir("${env.WORKSPACE}") {
-                    script {
-                        bat "docker build -t ${IMAGE_NAME}:${TAG} ."
-                    }
-                }
+                sh """
+                docker build -t ${params.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG} .
+                """
             }
         }
 
         stage('Run Container') {
             steps {
-                dir("${env.WORKSPACE}") {
-                    script {
-                        bat "docker run --rm ${IMAGE_NAME}:${TAG}"
-                    }
-                }
+                sh """
+                docker run -d -p ${params.CONTAINER_PORT}:${params.CONTAINER_PORT} ${params.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}
+                """
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                sh """
+                echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                docker push ${params.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}
+                """
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Build and container run successful!'
-        }
         failure {
-            echo '❌ Build failed!'
+            echo "❌ Build failed!"
+        }
+        success {
+            echo "✅ Build succeeded!"
         }
     }
 }
