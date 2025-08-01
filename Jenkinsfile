@@ -7,11 +7,12 @@ pipeline {
     }
 
     stages {
-        stage('Clone') {
-            steps {
-                git 'https://github.com/Fizza424/Docker-Working.git'
-            }
-        }
+        stage('Clone Repository') {
+    steps {
+        git branch: 'main', url: 'https://github.com/Fizza424/Docker-Working.git'
+    }
+}
+
 
         stage('Build Docker Image') {
             steps {
