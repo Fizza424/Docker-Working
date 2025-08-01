@@ -2,45 +2,40 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "hello-flask:${env.BUILD_ID}"
+        IMAGE_NAME = 'fizza424/docker-working'
+        CONTAINER_NAME = 'docker-working-app'
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/Fizza424/Docker-Working.git'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
-               bat 'docker-compose build'
-            }
-        }
-        
-        stage('Run Unit Tests') {
-            // If you have a tests folder and want to run unit tests inside the container
-            steps {
-                bat "docker-compose run --rm web python -m unittest discover -s tests"
+                bat 'docker build -t %IMAGE_NAME% .'
             }
         }
 
-        stage('Deploy Application') {
+        stage('Run Docker Container') {
             steps {
-                // Stop and remove any running instance
-                bat 'docker-compose down'
-                // Start the application in detached mode
-                bat 'docker-compose up -d'
+                bat 'docker rm -f %CONTAINER_NAME% || echo "No container to remove"'
+                bat 'docker run -d -p 8080:80 --name %CONTAINER_NAME% %IMAGE_NAME%'
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
+                    bat 'docker push %IMAGE_NAME%'
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline executed successfully!'
+            echo '✅ Deployment successful!'
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
+            echo '❌ Deployment failed!'
         }
     }
 }
