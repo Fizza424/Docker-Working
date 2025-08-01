@@ -15,16 +15,20 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    docker.build("${IMAGE_NAME}:${TAG}")
+                dir("${env.WORKSPACE}") {
+                    script {
+                        bat "docker build -t ${IMAGE_NAME}:${TAG} ."
+                    }
                 }
             }
         }
 
         stage('Run Container') {
             steps {
-                script {
-                    docker.image("${IMAGE_NAME}:${TAG}").run()
+                dir("${env.WORKSPACE}") {
+                    script {
+                        bat "docker run --rm ${IMAGE_NAME}:${TAG}"
+                    }
                 }
             }
         }
