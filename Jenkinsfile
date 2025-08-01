@@ -13,6 +13,14 @@ pipeline {
             }
         }
 
+        stage('List Files') {
+            steps {
+                dir("${env.WORKSPACE}") {
+                    bat 'dir'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 dir("${env.WORKSPACE}") {
