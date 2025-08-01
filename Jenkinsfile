@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'fizza424/docker-working'
+        IMAGE_NAME = 'fizza424/Docker-Working'
     }
 
     stages {
