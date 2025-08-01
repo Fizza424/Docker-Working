@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'yourdockerhubusername/docker-working'
+        IMAGE_NAME = 'fizza424/docker-working'
     }
 
     stages {
@@ -14,6 +14,7 @@ pipeline {
 
         stage('Run Container') {
             steps {
+                bat 'docker rm -f myapp || echo No container to remove'
                 bat 'docker run -d -p 8080:8080 --name myapp %IMAGE_NAME%'
             }
         }
@@ -29,14 +30,13 @@ pipeline {
     }
 
     post {
-        failure {
-            echo "❌ Build failed!"
-        }
         success {
-            echo "✅ Build succeeded!"
+            echo '✅ Deployment successful!'
+        }
+        failure {
+            echo '❌ Deployment failed!'
         }
     }
 }
-
 
 
